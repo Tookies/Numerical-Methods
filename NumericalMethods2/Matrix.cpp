@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include "Matrix.h"
 #include "MathOper.h"
 
@@ -38,7 +39,7 @@ Matrix::Matrix(std::vector<std::vector<double>> twoDimMass): n(twoDimMass.size()
 Matrix Matrix::Ones(int n)
 {
 	Matrix result(n, n);
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < n; ++i)
 	{
 		result[i][i] = 1;
 	}
@@ -49,6 +50,32 @@ Matrix Matrix::Ort(int n)
 {
 	Matrix result(n, 1);
 	result[0][0] = 1;
+	return result;
+}
+
+Matrix Matrix::FormAForTest5(int n, int N, double e)
+{
+	Matrix result(n, n);
+	for (int i = 0; i < n; ++i)
+	{
+		for (int j = 0; j < n; ++j)
+		{
+			if (i < j) result[i][j] = -1 - e * N;
+			else if (i > j) result[i][j] = e * N;
+			else result[i][j] = 1 + e * N;
+		}
+	}
+	return result;
+}
+
+Matrix Matrix::FormbForTest5(int n)
+{
+	Matrix result(n, 1);
+	for (int i = 0; i < n-1; ++i)
+	{
+		result[i][0] = -1;
+	}
+	result[n-1][0] = 1;
 	return result;
 }
 
@@ -144,7 +171,7 @@ Matrix Matrix::operator*(const Matrix& right) const
 	{
 		for (int j = 0; j < rightColumns; ++j)
 		{
-			for (int k = 0; k < leftColumns; k++)
+			for (int k = 0; k < leftColumns; ++k)
 				result[i][j] += A[i][k] * right[k][j];
 		}
 	}
@@ -186,6 +213,14 @@ Matrix Matrix::Transposition() const
 	return result;
 }
 
+bool Matrix::DiagonalPredominance() const
+{
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			if (A[i][i] < A[i][j]) return false;
+	return true;
+}
+
 void Matrix::TransferLines(int a, int b)
 {
 	swap(A[a], A[b]);
@@ -216,5 +251,73 @@ Matrix Matrix::MatrixEdition(int n)
 			for (int j = n - matrixSize, l = 0; j < n; ++l, ++j)
 				result[i][j] = A[k][l];
 		return result;
+	}
+}
+
+Matrix Matrix::Delta(const Matrix& right)
+{
+	if (this->GetColumns() != right.GetColumns() || this->GetLines() != right.GetLines())
+	{
+		std::cerr << "\nIt is impossible to search Delta. Arrays are different sizes" << std::endl;
+		exit(3); // завершить работу программы
+	}
+	Matrix result(*this - right);
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+			result[i][j] = MathOper::Module(result[i][j]);
+	return result;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& x)
+{
+	int n = x.GetLines();
+	int m = x.GetColumns();
+	if (n != 1)
+	{
+		std::cerr << "\nYou can't write a matrix with more than 1 rows, use the 'Write' method" << std::endl;
+		exit(4); // завершить работу программы
+	}
+	std::string matr = "";
+	for (int i = 0; i < n; ++i)
+	{
+		matr += "(";
+		for (int j = 0; j < m; ++j)
+		{
+			matr += std::to_string(x[i][j]);
+			if (j != m - 1) matr += ", ";
+		}
+		matr += ")";
+	}
+	std::cout << matr;
+	return out;
+}
+
+void Matrix::Write()
+{
+	for (int i = 0; i < n; ++i)
+	{
+		std::cout << "(";
+		for (int j = 0; j < m; ++j)
+		{
+			std::cout << A[i][j];
+			if (j != m-1) std::cout << ", ";
+		}
+		std::cout << ")";
+		if (n != 1) std::cout << std::endl;
+	}
+}
+
+void Matrix::Write() const
+{
+	for (int i = 0; i < n; ++i)
+	{
+		std::cout << "(";
+		for (int j = 0; j < m; ++j)
+		{
+			std::cout << A[i][j];
+			if (j != m - 1) std::cout << ", ";
+		}
+		std::cout << ")";
+		if (n != 1) std::cout << std::endl;
 	}
 }

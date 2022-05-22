@@ -77,3 +77,18 @@ double MathOper::LineNorm(const Matrix& M)
 	}
 	return result;
 }
+
+double MathOper::MaxElemNorm(const Matrix& M)
+{
+	double result = -1;
+	int MColumns = M.GetColumns();
+	int MLines = M.GetLines();
+	for (int j = 0; j < MColumns; ++j)
+	{
+		for (int i = 0; i < MLines; ++i)
+		{
+			if (MathOper::Module(M[i][j]) > result) result = MathOper::Module(M[i][j]);
+		}
+	}
+	return result;
+}

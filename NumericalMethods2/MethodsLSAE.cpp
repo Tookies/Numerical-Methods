@@ -1,6 +1,17 @@
 #include "MethodsLSAE.h"
 
-const double MethodsLSAE::eps = 0.00001;
+double MethodsLSAE::Norm(int i, const Matrix& M)
+{
+	if (i == 0) return MathOper::EuclideanNorm(M);
+	else if (i == 1) return MathOper::ColumnNorm(M);
+	else if (i == 2) return MathOper::LineNorm(M);
+	else if (i == 3) return MathOper::MaxElemNorm(M);
+	else
+	{
+		std::cerr << "\nYou are trying to trigger a norm that is not implemented" << std::endl;
+		exit(5);
+	}
+}
 
 Matrix MethodsLSAE::GaussMethod(const Matrix& A, const Matrix& b)
 {
@@ -96,26 +107,56 @@ Matrix MethodsLSAE::NouseholderMethod(const Matrix& A, const Matrix& b)
 	return x;
 }
 
-Matrix MethodsLSAE::SimpleIterationMethod(const Matrix& A, const Matrix& b)
+Matrix MethodsLSAE::SimpleIterationMethod(const Matrix& An, const Matrix& bn, int& counter, double eps)
 {
+	Matrix A(An);
+	double mu = 0;
 	int n = A.GetLines();
-	double mu = 1 / MathOper::EuclideanNorm(A);
-	Matrix c = b * mu;
-	Matrix B = Matrix::Ones(n) - (A * mu);
-	double BNorm = MathOper::EuclideanNorm(B);
+	Matrix B(n, n);
+	double BNorm = 1;
+
+	Matrix b(bn);
+	bool transp = true;
+	for (int i = 1; i < 3; ++i)
+	{
+		mu = 1 / Norm(i, A);
+		B = Matrix::Ones(n) - (A * mu);
+		BNorm = Norm(i, B);
+		if (BNorm < 1) break;
+		if (i == 2 && BNorm >= 1 && transp)
+		{
+			if (transp)
+			{
+				transp = false;
+				i = 1;
+			}
+			b = An.Transposition() * b;
+			A = An.Transposition() * A;
+		}
+	}
+
 	double exprBNorm = BNorm/(1-BNorm);
+	Matrix c = b * mu;
 	Matrix xk(n,1);
 	Matrix xk1(c);
 	do
 	{
+		counter++;
 		xk = xk1;
 		xk1 = B * xk + c;
-	} while (exprBNorm * (MathOper::EuclideanNorm(xk1 - xk)) > eps);
+	} while (MathOper::EuclideanNorm(A * xk1 - b) > eps);
 	return xk1;
 }
 
-Matrix MethodsLSAE::SeidelMethod(const Matrix& A, const Matrix& b)
+Matrix MethodsLSAE::SeidelMethod(const Matrix& An, const Matrix& bn, int& counter, double eps)
 {
+	Matrix A(An);
+	Matrix b(bn);
+	if (!A.DiagonalPredominance())
+	{
+		A = An.Transposition() * A;
+		b = An.Transposition() * b;
+	}
 	int n = A.GetLines();
 	Matrix c = Matrix(n, n);
 	Matrix d = Matrix(n, 1);
@@ -131,6 +172,7 @@ Matrix MethodsLSAE::SeidelMethod(const Matrix& A, const Matrix& b)
 	Matrix xk1 = d;
 	do
 	{
+		counter++;
 		for (int i = 0; i < n; ++i)
 		{
 			xk1[i][0] = 0;
